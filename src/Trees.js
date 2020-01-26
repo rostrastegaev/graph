@@ -55,10 +55,12 @@ function renderTrees(ref, size, trees, callbacks) {
       node,
       tree,
       {
-        width: sizes[i].height,
-        height: sizes[i].width,
+        width: sizes[i].width,
+        height: sizes[i].height,
         margin: margin,
-        topOffset: topOffset
+        topOffset: topOffset,
+        containerWidth: width,
+        containerHeight: height
       },
       callbacks
     );
@@ -67,15 +69,15 @@ function renderTrees(ref, size, trees, callbacks) {
 }
 
 function renderTree(node, tree, size, callbacks) {
-  const { width, height, margin, topOffset } = size;
+  const { width, height, margin, topOffset, containerWidth, containerHeight } = size;
   const { onNodeClick } = callbacks;
 
   // direction of links
   const orientations = {
     "left-to-right": {
-      size: [width, height],
+      size: [height, width],
       x: function(d) {
-        return d.y;
+        return height - d.y;
       },
       y: function(d) {
         return d.x;
@@ -86,14 +88,14 @@ function renderTree(node, tree, size, callbacks) {
   // link render configuration
   const diagonal = d3
     .linkHorizontal()
-    .x(d => d.y)
-    .y(d => d.x);
+    .x(orientations["left-to-right"].x)
+    .y(orientations["left-to-right"].y);
 
   // append new tree in svg
   const svg = node
     .data(d3.entries(orientations))
     .append("g")
-    .attr("transform", "translate(" + margin.left + "," + topOffset + ")");
+    .attr("transform", "translate(" + (containerHeight - height + margin.left) + "," + topOffset + ")");
 
   // не делай здесь струлочную функцию
   // минут 40 потратил из-за этого, так как посыпалось всё)
