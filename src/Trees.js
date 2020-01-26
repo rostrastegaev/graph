@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import "./Trees.css";
 
+const linkWidth = 75;
+
 function renderTrees(ref, size, trees, callbacks) {
   const { width, height, margin } = size;
 
@@ -34,22 +36,31 @@ function renderTrees(ref, size, trees, callbacks) {
     sum.treeHeight--;
   }
 
-  const treeOffsets = coefficients.map(
-    coefficient =>
-      ((sum.treeHeight - coefficient.treeHeight + 1) / sum.treeHeight) * width
-  );
-
   // считаем размеры каждого из деревьев, здесь уже width и height классические
-  const sizes = coefficients.map(coefficient => ({
-    width:
-      ((coefficient.treeHeight === 1 ? 1 : coefficient.treeHeight - 1) /
-        sum.treeHeight) *
-      width,
-    height: (coefficient.treeWidth / sum.treeWidth) * height
-  }));
+  const sizes = coefficients.map(coefficient => {
+    const treeHeight =
+      coefficient.treeHeight === 1 ? 1 : coefficient.treeHeight - 1;
+    const fixedTreeWidth = treeHeight === 1 ? 0 : linkWidth * treeHeight;
+    const contentWidth = (treeHeight / sum.treeHeight) * width;
+    const contentHeight = (coefficient.treeWidth / sum.treeWidth) * height;
+
+    if (contentWidth > fixedTreeWidth) {
+      return {
+        width: fixedTreeWidth,
+        height: contentHeight,
+        offset: width - fixedTreeWidth
+      };
+    }
+
+    return {
+      width: contentWidth,
+      height: contentHeight,
+      offset: ((sum.treeHeight - coefficient.treeHeight + 1) / sum.treeHeight) * width
+    };
+  });
 
   sizes.forEach((size, i) => {
-    size.xOffset = width - size.height + margin.left - treeOffsets[i];
+    size.xOffset = width - size.height + margin.left - size.offset;
   });
 
   // настраиваем нашу svg и оборачиваем в d3
