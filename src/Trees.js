@@ -27,11 +27,17 @@ function renderTrees(ref, size, trees, callbacks) {
       treeHeight: 0
     }
   );
+
   // если уровень 1 (одиночная точка), то ничего не делаем,
   // так как нам потом делить на это значение
   if (sum.treeHeight > 1) {
     sum.treeHeight--;
   }
+
+  const treeOffsets = coefficients.map(
+    coefficient =>
+      ((sum.treeHeight - coefficient.treeHeight + 1) / sum.treeHeight) * width
+  );
 
   // считаем размеры каждого из деревьев, здесь уже width и height классические
   const sizes = coefficients.map(coefficient => ({
@@ -42,6 +48,10 @@ function renderTrees(ref, size, trees, callbacks) {
     height: (coefficient.treeWidth / sum.treeWidth) * height
   }));
 
+  sizes.forEach((size, i) => {
+    size.xOffset = width - size.height + margin.left - treeOffsets[i];
+  });
+
   // настраиваем нашу svg и оборачиваем в d3
   const node = d3
     .select(ref.current)
@@ -49,7 +59,7 @@ function renderTrees(ref, size, trees, callbacks) {
     .attr("height", height + margin.top + margin.bottom);
 
   // текущий отступ сверху от предыдущего дерева
-  let topOffset = 0;
+  let yOffset = 0;
   trees.forEach((tree, i) => {
     renderTree(
       node,
@@ -58,18 +68,17 @@ function renderTrees(ref, size, trees, callbacks) {
         width: sizes[i].width,
         height: sizes[i].height,
         margin: margin,
-        topOffset: topOffset,
-        containerWidth: width,
-        containerHeight: height
+        yOffset: yOffset,
+        xOffset: sizes[i].xOffset
       },
       callbacks
     );
-    topOffset += sizes[i].height;
+    yOffset += sizes[i].height;
   });
 }
 
 function renderTree(node, tree, size, callbacks) {
-  const { width, height, margin, topOffset, containerWidth, containerHeight } = size;
+  const { width, height, yOffset, xOffset } = size;
   const { onNodeClick } = callbacks;
 
   // direction of links
@@ -95,7 +104,7 @@ function renderTree(node, tree, size, callbacks) {
   const svg = node
     .data(d3.entries(orientations))
     .append("g")
-    .attr("transform", "translate(" + (containerHeight - height + margin.left) + "," + topOffset + ")");
+    .attr("transform", "translate(" + xOffset + "," + yOffset + ")");
 
   // не делай здесь струлочную функцию
   // минут 40 потратил из-за этого, так как посыпалось всё)
@@ -134,7 +143,7 @@ function renderTree(node, tree, size, callbacks) {
       .attr("r", 4.5)
       .attr("cx", o.x)
       .attr("cy", o.y)
-      .on('click', onNodeClick);
+      .on("click", onNodeClick);
   });
 }
 
